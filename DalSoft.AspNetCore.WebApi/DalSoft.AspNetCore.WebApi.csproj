@@ -4,16 +4,14 @@
     <Description>
       Centralized ASP.NET Core Error Handling using Problem Details. Updatable configuration using Options pattern see https://github.com/DalSoft/DalSoft.AspNetCore.WebApi for usage info.
     </Description>
-    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionPrefix>1.0.1</VersionPrefix>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <AssemblyName>DalSoft.AspNetCore.WebApi</AssemblyName>
     <PackageId>DalSoft.AspNetCore.WebApi</PackageId>
     <PackageTags>ASP.NET Core, Error Handling, Problem Details, Configuration</PackageTags>
     <Owners>DalSoft</Owners>
     <Authors>DalSoft</Authors>
-    <PackageReleaseNotes>
-      Initial release
-    </PackageReleaseNotes>
+    <PackageReleaseNotes>Added functionality to write your own error response.</PackageReleaseNotes>
     <PackageIconUrl>https://dalsoft.co.uk/images/icon.png</PackageIconUrl>
     <PackageProjectUrl>https://github.com/DalSoft/DalSoft.AspNetCore.WebApi</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

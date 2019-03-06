@@ -15,22 +15,34 @@ namespace DalSoft.AspNetCore.WebApi.ErrorHandling
     public static class ProblemDetailsExceptionHandler
     {
         private static Action<HttpContext, Exception> _unhandledException = (context, exception) => { };
+        private static Func<HttpContext, ProblemDetailsResponse, Task> _writeError = WriteError;
         private static JsonSerializerSettings _serializerSettings;
         
         public static void UseProblemDetailExceptionHandler(this IApplicationBuilder app, IHostingEnvironment env)
         {
-            UseProblemDetailExceptionHandler(app, env, (context, exception) => { });
+            UseProblemDetailExceptionHandler(app, env, _unhandledException, _writeError);
         }
-        
-        public static void UseProblemDetailExceptionHandler(this IApplicationBuilder app, IHostingEnvironment env,  Action<HttpContext, Exception> unhandledException)
+
+        public static void UseProblemDetailExceptionHandler(this IApplicationBuilder app, IHostingEnvironment env, Action<HttpContext, Exception> unhandledException)
+        {
+            UseProblemDetailExceptionHandler(app, env, unhandledException, _writeError);
+        }
+
+        public static void UseProblemDetailExceptionHandler(this IApplicationBuilder app, IHostingEnvironment env, Func<HttpContext, ProblemDetailsResponse, Task> writeError)
+        {
+            UseProblemDetailExceptionHandler(app, env, _unhandledException, writeError);
+        }
+
+        public static void UseProblemDetailExceptionHandler(this IApplicationBuilder app, IHostingEnvironment env,  Action<HttpContext, Exception> unhandledException, Func<HttpContext, ProblemDetailsResponse, Task> writeError)
         {
             if (!ProblemDetailsFactory.Contains(DefaultProblemTypes.InternalServerError.ToString()))
                 throw new InvalidOperationException("To use ProblemDetailExceptionHandler you need to call AddProblemDetailFactory in your Startup.");
             
-            _serializerSettings = app.ApplicationServices.GetRequiredService<IOptions<MvcJsonOptions>>().Value.SerializerSettings;
+            _serializerSettings = app.ApplicationServices.GetService<IOptions<MvcJsonOptions>>()?.Value?.SerializerSettings ?? Serialization.Serialization.DefaultJsonSerializerSettings;
             
-            _unhandledException = unhandledException;
-            
+            _unhandledException = unhandledException ?? _unhandledException;
+            _writeError = writeError ?? _writeError;
+
             app.UseExceptionHandler(new ExceptionHandlerOptions
             {
                 ExceptionHandler = context => Invoke(context, env)
@@ -65,7 +77,7 @@ namespace DalSoft.AspNetCore.WebApi.ErrorHandling
                 if (hostingEnvironment.IsDevelopment())
                     internalServerProblemDetailResponse.Debug = errorHandler.Error; //Output the exception only when ASPNETCORE_ENVIRONMENT is set to "Development"
                 
-                await WriteError(context, internalServerProblemDetailResponse);
+                await _writeError(context, internalServerProblemDetailResponse);
             }
         }
         
@@ -76,8 +88,7 @@ namespace DalSoft.AspNetCore.WebApi.ErrorHandling
             if (problemDetailsResponse.TrySerialize(_serializerSettings, out var result)) //TODO get JSON options from IoC rather than custom 
             {
                 context.Response.ContentType = "application/json"; //TODO: at the moment only application/Json is supported. context.Request.Headers["Accept"].FirstOrDefault() ?? Serialization.ApplicationJson.MediaType.Value;
-                await context.Response.WriteAsync(result).ConfigureAwait(false); 
-            }
+                await context.Response.WriteAsync(result).ConfigureAwait(false); }
         }
     }
 }
